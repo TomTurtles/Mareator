@@ -1,0 +1,3 @@
+# Mareator
+
+Simple Mediator Pattern

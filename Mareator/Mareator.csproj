@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<LangVersion>12</LangVersion>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Description>Use of simple yet powerful Mediator-Pattern</Description>
+		<Version>0.0.1</Version>
+		<Authors>Tom-Oliver Marek</Authors>
+		<GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+		<IsPackable>true</IsPackable>
+		<PackageId>Mareator</PackageId>
+		<PackageOutputPath>C:\Users\tom-o\source\nugets</PackageOutputPath>
+		<PackageTags>Mediator Simple</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/TomTurtles/mareator;</RepositoryUrl>
+	</PropertyGroup>
+
+</Project>
