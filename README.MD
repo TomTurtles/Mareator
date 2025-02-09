@@ -1,3 +1,5 @@
 # Mareator
 
-Simple Mediator Pattern
+Simple Mediator Pattern.
+
+Works only with IServiceProvider from Mircosoft.Extensions.DependencyInjection.Abstractions.

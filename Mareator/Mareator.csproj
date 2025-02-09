@@ -12,7 +12,11 @@
 		<PackageOutputPath>C:\Users\tom-o\source\nugets</PackageOutputPath>
 		<PackageTags>Mediator Simple</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<RepositoryUrl>https://github.com/TomTurtles/mareator;</RepositoryUrl>
+		<RepositoryUrl>https://github.com/TomTurtles/mareator</RepositoryUrl>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
+	</ItemGroup>
 
 </Project>
