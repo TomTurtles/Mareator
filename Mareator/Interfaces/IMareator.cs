@@ -34,4 +34,17 @@ public interface IMareator
     /// <param name="command">An instance of the command to be processed.</param>
     Task RunAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
         where TCommand : ICommand;
+
+    /// <summary>
+    /// Processes a request and returns a response.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type.</typeparam>
+    /// <typeparam name="TResponse">The response type.</typeparam>
+    /// <param name="request">An instance of the request.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A Task that yields the response.</returns>
+    Task<TResponse> RequestAsync<TRequest, TResponse>(
+        TRequest request,
+        CancellationToken cancellationToken = default
+    ) where TRequest : IRequest<TResponse>;
 }

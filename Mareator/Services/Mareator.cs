@@ -1,10 +1,21 @@
 ﻿
 namespace Mareator;
 
-public sealed class Mareator(IEventDispatcher eventDispatcher, ICommandDispatcher commandDispatcher) : IMareator
+public sealed class Mareator : IMareator
 {
-    private readonly IEventDispatcher _eventDispatcher = eventDispatcher;
-    private readonly ICommandDispatcher _commandDispatcher = commandDispatcher;
+    private readonly IEventDispatcher _eventDispatcher;
+    private readonly ICommandDispatcher _commandDispatcher;
+    private readonly IRequestDispatcher _requestDispatcher;
+
+    public Mareator(
+        IEventDispatcher eventDispatcher,
+        ICommandDispatcher commandDispatcher,
+        IRequestDispatcher requestDispatcher)
+    {
+        _eventDispatcher = eventDispatcher;
+        _commandDispatcher = commandDispatcher;
+        _requestDispatcher = requestDispatcher;
+    }
 
     public void Subscribe<TEventArgs>(EventHandler<TEventArgs> handler)
         where TEventArgs : EventArgs
@@ -28,5 +39,10 @@ public sealed class Mareator(IEventDispatcher eventDispatcher, ICommandDispatche
         where TCommand : ICommand
     {
         await _commandDispatcher.RunAsync(command);
+    }
+    public async Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) 
+        where TRequest : IRequest<TResponse>
+    {
+        return await _requestDispatcher.RequestAsync<TRequest, TResponse>(request, cancellationToken);
     }
 }

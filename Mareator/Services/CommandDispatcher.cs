@@ -5,7 +5,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
 
     public CommandDispatcher(IEnumerable<ICommandHandler> handlers)
     {
-        // Discover any IAsyncCommandHandler<T> interfaces implemented by each handler
+        // Discover any ICommandHandler<T> interfaces implemented by each handler
         foreach (var handler in handlers)
         {
             var handlerInterfaces = handler.GetType().GetInterfaces()

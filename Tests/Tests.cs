@@ -35,7 +35,34 @@ public sealed class Tests
         {
             await mareator.RunAsync(new TestCommand());
         }
-        catch (Exception ex)
+        catch (Exception)
+        {
+            throwsException = true;
+        }
+
+        Assert.IsFalse(throwsException);
+    }
+    
+    [TestMethod]
+    public async Task _3_RunTestRequest_ShouldWorkAsync()
+    {
+        Assembly[] assemblies = [
+            Assembly.GetExecutingAssembly()
+        ];
+
+        var services = new ServiceCollection()
+            .AddMareator(assemblies);
+
+        var provider = services.BuildServiceProvider();
+        var mareator = provider.GetRequiredService<IMareator>();
+
+        var throwsException = false;
+        try
+        {
+            var result = await mareator.RequestAsync<TestRequest, TestRequestResult>(new TestRequest());
+            Assert.AreEqual(3, result.Value);
+        }
+        catch (Exception)
         {
             throwsException = true;
         }
@@ -44,7 +71,7 @@ public sealed class Tests
     }
 
     [TestMethod]
-    public async Task _3_Publish_ShouldWorkAsync()
+    public async Task _4_Publish_ShouldWorkAsync()
     {
         Assembly[] assemblies = [
             Assembly.GetExecutingAssembly()
@@ -74,7 +101,7 @@ public sealed class Tests
             mareator.Publish(this, new TestEvent());
             mareator.Publish(this, new TestEvent2());
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throwsException = true;
         }
@@ -89,10 +116,16 @@ public sealed class Tests
 
 public class TestCommand() : ICommand;
 public class TestCommand2() : ICommand;
+public class TestRequest() : IRequest<TestRequestResult>;
+public class TestRequestResult(int Value)
+{
+    public int Value { get; } = Value;
+}
+
 public class TestEvent() : EventArgs();
 public class TestEvent2() : EventArgs();
 
-public class TestHandler : ICommandHandler<TestCommand>
+public class TestHandler : ICommandHandler<TestCommand>, IRequestHandler<TestRequest, TestRequestResult>
 {
     public bool Handled { get; private set; } = false;
 
@@ -100,6 +133,11 @@ public class TestHandler : ICommandHandler<TestCommand>
     {
         await Task.Delay(500);
         Console.WriteLine($"TestHandler TestCommand {DateTime.Now.Millisecond}");
+    }
+
+    public Task<TestRequestResult> HandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestRequestResult(3));
     }
 }
 
