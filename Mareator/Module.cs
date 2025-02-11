@@ -1,81 +1,57 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace Mareator;
+﻿namespace Mareator;
 
 public static class Module
 {
-    public static IServiceCollection AddMareator(this IServiceCollection services, params Assembly[] assemblies)
+    /// <summary>
+    /// Registers IEventDispatcher, ICommandDispatcher, and IMareator as singletons.
+    /// Also scans the provided assemblies for any ICommandHandler<TCommand> implementations
+    /// and registers them. If no assemblies are specified, it uses the calling assembly by default.
+    /// </summary>
+    /// <param name="services">The DI service collection.</param>
+    /// <param name="assemblies">Assemblies to scan for ICommandHandler implementations.</param>
+    /// <returns>The updated IServiceCollection.</returns>
+    public static IServiceCollection AddMareator(
+        this IServiceCollection services,
+        params Assembly[] assemblies)
     {
-        if (assemblies.Length <= 0)
+        // If no assemblies provided, use the calling assembly as a best guess
+        if (assemblies == null || assemblies.Length == 0)
         {
-            assemblies = [Assembly.GetExecutingAssembly()];
+            assemblies = [Assembly.GetCallingAssembly()];
         }
 
+        // 1. Register all ICommandHandler<TCommand> implementations from the given assemblies
         foreach (var assembly in assemblies)
         {
-            services
-                .RegisterRequestHandlers(assembly)
-                .RegisterNotificationHandlers(assembly);
-        }
+            var handlerTypes = assembly.GetTypes()
+                .Where(t => !t.IsAbstract && !t.IsInterface)
+                .Where(t => t.GetInterfaces().Any(i =>
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>)))
+                .ToList();
 
-        return services
-            .AddSingleton<IMareator, Mareator>();
-    }
-
-    private static IServiceCollection RegisterRequestHandlers(this IServiceCollection services, Assembly assembly)
-    {
-        Type[] requestHandlerTypes = [
-            typeof(IRequestHandler<,>),
-            typeof(IRequestHandler<>),
-        ];
-
-        var handlerTypes = assembly.GetTypes()
-            .Where(t => t.GetInterfaces().Any(i => i.IsGenericType && requestHandlerTypes.Contains(i.GetGenericTypeDefinition())))
-            .ToList();
-
-        foreach (var handlerType in handlerTypes)
-        {
-            var handlerInterfaces = handlerType.GetInterfaces()
-                .Where(i => i.IsGenericType && requestHandlerTypes.Contains(i.GetGenericTypeDefinition()));
-
-            foreach (var handlerInterface in handlerInterfaces)
+            foreach (var type in handlerTypes)
             {
-                if (services.Select(serviceDescriptor => serviceDescriptor.ServiceType).Contains(handlerInterface))
+                // Register the handler as itself for the DI container
+                services.AddSingleton(typeof(ICommandHandler), type);
+
+                // Also register for each ICommandHandler<TCommand> interface it implements
+                var handlerInterfaces = type.GetInterfaces().Where(i =>
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
+
+                foreach (var intf in handlerInterfaces)
                 {
-                    throw new InvalidOperationException($"ServiceCollection already contains a request handler '{handlerInterface}'");
+                    services.AddSingleton(intf, type);
                 }
-                else
-                {
-                    services.AddTransient(handlerInterface, handlerType);
-                }
-                
             }
         }
 
-        return services;
-    }
-    private static IServiceCollection RegisterNotificationHandlers(this IServiceCollection services, Assembly assembly)
-    {
-        Type[] requestHandlerTypes = [
-            typeof(INotificationHandler<>),
-        ];
+        // 2. Register the core dispatchers
+        services.AddSingleton<IEventDispatcher, EventDispatcher>();
+        services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 
-        var handlerTypes = assembly.GetTypes()
-            .Where(t => t.GetInterfaces().Any(i => i.IsGenericType && requestHandlerTypes.Contains(i.GetGenericTypeDefinition())))
-            .ToList();
-
-        foreach (var handlerType in handlerTypes)
-        {
-            var handlerInterfaces = handlerType.GetInterfaces()
-                .Where(i => i.IsGenericType && requestHandlerTypes.Contains(i.GetGenericTypeDefinition()));
-
-            foreach (var handlerInterface in handlerInterfaces)
-            {
-                services.AddTransient(handlerInterface, handlerType);
-            }
-        }
+        // 3. Register Mareator (Facade)
+        services.AddSingleton<IMareator, Mareator>();
 
         return services;
     }
-
 }

@@ -1,53 +1,32 @@
-﻿namespace Mareator;
+﻿
+namespace Mareator;
 
-public class Mareator(IServiceProvider serviceProvider) : IMareator
+public sealed class Mareator(IEventDispatcher eventDispatcher, ICommandDispatcher commandDispatcher) : IMareator
 {
-    public IServiceProvider ServiceProvider { get; } = serviceProvider;
+    private readonly IEventDispatcher _eventDispatcher = eventDispatcher;
+    private readonly ICommandDispatcher _commandDispatcher = commandDispatcher;
 
-    public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
-        where TRequest : Request<TResponse>
+    public void Subscribe<TEventArgs>(EventHandler<TEventArgs> handler)
+        where TEventArgs : EventArgs
     {
-        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(typeof(TRequest), typeof(TResponse));
-
-        var handler = ServiceProvider.GetService(handlerType)
-            ?? throw new InvalidOperationException($"No handler for {handlerType}");
-
-        var castedHandler = (IRequestHandler<TRequest, TResponse>)handler;
-
-        return await castedHandler.HandleAsync(request, cancellationToken);
+        _eventDispatcher.Subscribe(handler);
     }
 
-
-    public async Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
-        where TRequest : Request
+    public void Unsubscribe<TEventArgs>(EventHandler<TEventArgs> handler)
+        where TEventArgs : EventArgs
     {
-        var handlerType = typeof(IRequestHandler<>).MakeGenericType(typeof(TRequest));
-
-        var handler = ServiceProvider.GetService(handlerType)
-            ?? throw new InvalidOperationException($"No handler for {handlerType}");
-
-        var castedHandler = (IRequestHandler<TRequest>)handler;
-
-        await castedHandler.HandleAsync(request, cancellationToken);
+        _eventDispatcher.Unsubscribe(handler);
     }
 
-
-    public async Task PublishAsync<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-        where TNotification : Notification
+    public void Publish<TEventArgs>(object sender, TEventArgs eventArgs)
+        where TEventArgs : EventArgs
     {
-        var serviceType = typeof(INotificationHandler<>).MakeGenericType(typeof(TNotification));
+        _eventDispatcher.Publish(sender, eventArgs);
+    }
 
-        var handlers = ServiceProvider.GetServices(serviceType)
-            ?? throw new InvalidOperationException($"Notification handler(s) '{serviceType.Name}' not registered");
-
-        if (handlers.Count() <= 0) return;
-
-        var handleTasks = handlers.Select((object handlerObject) =>
-        {
-            var handler = (INotificationHandler<TNotification>)handlerObject;
-            return handler.Handle(notification);
-        });
-
-        await Task.WhenAll(handleTasks);
+    public async Task RunAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
+        where TCommand : ICommand
+    {
+        await _commandDispatcher.RunAsync(command);
     }
 }

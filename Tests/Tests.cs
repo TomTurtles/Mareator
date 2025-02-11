@@ -1,5 +1,4 @@
-﻿
-namespace Tests;
+﻿namespace Tests;
 
 [TestClass]
 public sealed class Tests
@@ -19,7 +18,7 @@ public sealed class Tests
     }
 
     [TestMethod]
-    public async Task _2_Send_ShouldWorkAsync()
+    public async Task _2_RunTestCommand_ShouldWorkAsync()
     {
         Assembly[] assemblies = [
             Assembly.GetExecutingAssembly()
@@ -34,7 +33,7 @@ public sealed class Tests
         var throwsException = false;
         try
         {
-            await mareator.SendAsync(new TestEvent());
+            await mareator.RunAsync(new TestCommand());
         }
         catch (Exception ex)
         {
@@ -45,7 +44,7 @@ public sealed class Tests
     }
 
     [TestMethod]
-    public async Task _3_SendWithReturnValue_ShouldWorkAsync()
+    public async Task _3_Publish_ShouldWorkAsync()
     {
         Assembly[] assemblies = [
             Assembly.GetExecutingAssembly()
@@ -57,83 +56,60 @@ public sealed class Tests
         var provider = services.BuildServiceProvider();
         var mareator = provider.GetRequiredService<IMareator>();
 
-        var throwsException = false;
         var result = 0;
+
+        mareator.Subscribe<TestEvent>((sender, args) =>
+        {
+            result++;
+        });
+        mareator.Subscribe<TestEvent2>((sender, args) =>
+        {
+            result++;
+        });
+
+        var throwsException = false;
         try
         {
-            result = await mareator.SendAsync<TestEvent2, int>(new TestEvent2());
+            mareator.Publish(this, new TestEvent());
+            mareator.Publish(this, new TestEvent());
+            mareator.Publish(this, new TestEvent2());
         }
         catch (Exception ex)
         {
             throwsException = true;
         }
 
-        Assert.IsFalse(throwsException);
-        Assert.AreEqual(2, result);
-    }
-
-    [TestMethod]
-    public async Task _4_Publish_ShouldWorkAsync()
-    {
-        Assembly[] assemblies = [
-            Assembly.GetExecutingAssembly()
-        ];
-
-        var services = new ServiceCollection()
-            .AddMareator(assemblies);
-
-        var provider = services.BuildServiceProvider();
-        var mareator = provider.GetRequiredService<IMareator>();
-
-        var throwsException = false;
-        var result = 0;
-        try
-        {
-            await mareator.PublishAsync(new TestEvent3());
-        }
-        catch (Exception ex)
-        {
-            throwsException = true;
-        }
+        await Task.Delay(1000);
 
         Assert.IsFalse(throwsException);
+        Assert.AreEqual(3, result);
     }
 }
 
 
+public class TestCommand() : ICommand;
+public class TestCommand2() : ICommand;
+public class TestEvent() : EventArgs();
+public class TestEvent2() : EventArgs();
 
-public class TestEvent(): Request();
-public class TestEvent2(): Request<int>();
-public class TestEvent3(): Notification;
-
-public class TestHandler : IRequestHandler<TestEvent>, IRequestHandler<TestEvent2, int>, INotificationHandler<TestEvent3>
+public class TestHandler : ICommandHandler<TestCommand>
 {
+    public bool Handled { get; private set; } = false;
 
-    public async Task HandleAsync(TestEvent request, CancellationToken cancellationToken = default)
+    public async Task HandleAsync(TestCommand command, CancellationToken cancellationToken = default)
     {
         await Task.Delay(500);
-        Console.WriteLine($"TestHandler TestEvent");
-    }
-
-    public async Task<int> HandleAsync(TestEvent2 request, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(500);
-        Console.WriteLine($"TestHandler TestEvent2");
-        return 2;
-    }
-
-    public async Task Handle(TestEvent3 notification)
-    {
-        await Task.Delay(500);
-        Console.WriteLine($"TestHandler TestEvent3 {DateTime.Now.Millisecond}");
+        Console.WriteLine($"TestHandler TestCommand {DateTime.Now.Millisecond}");
     }
 }
 
-public class TestHandler2 : INotificationHandler<TestEvent3>
+public class TestHandler2 : ICommandHandler<TestCommand2>
 {
-    public async Task Handle(TestEvent3 notification)
+    public bool Handled { get; private set; } = false;
+    public async Task HandleAsync(TestCommand2 notification, CancellationToken cancellationToken = default)
     {
         await Task.Delay(500);
-        Console.WriteLine($"TestHandler2 TestEvent3 {DateTime.Now.Millisecond}");
+        Console.WriteLine($"TestHandler2 TestCommand2 {DateTime.Now.Millisecond}");
+        Handled = true;
     }
 }
