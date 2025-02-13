@@ -1,5 +1,4 @@
-﻿
-namespace Mareator;
+﻿namespace Mareator;
 
 public sealed class Mareator : IMareator
 {
@@ -38,7 +37,7 @@ public sealed class Mareator : IMareator
     public async Task RunAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
         where TCommand : ICommand
     {
-        await _commandDispatcher.RunAsync(command);
+        await _commandDispatcher.RunAsync(command, cancellationToken);
     }
     public async Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default) 
         where TRequest : IRequest<TResponse>

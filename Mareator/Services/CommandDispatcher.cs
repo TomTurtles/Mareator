@@ -43,6 +43,8 @@ public sealed class CommandDispatcher : ICommandDispatcher
             );
         }
 
+        if (cancellationToken.IsCancellationRequested) return;
+
         // Cast to the appropriate async command handler and invoke
         var handler = (ICommandHandler<TCommand>)handlerObj;
         await handler.HandleAsync(command, cancellationToken);

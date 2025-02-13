@@ -63,6 +63,8 @@ public sealed class RequestDispatcher : IRequestDispatcher
             );
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         // Safely cast to IRequestHandler<TRequest,TResponse> and invoke
         var typedHandler = (IRequestHandler<TRequest, TResponse>)handlerObj;
         return await typedHandler.HandleAsync(request, cancellationToken);
