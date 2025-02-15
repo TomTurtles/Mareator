@@ -3,7 +3,7 @@
 /// <summary>
 /// Defines a dispatcher that runs a request and retrieves its response.
 /// </summary>
-public interface IRequestDispatcher
+public interface IMareatorRequestDispatcher
 {
     /// <summary>
     /// Runs the given request by finding its corresponding handler,

@@ -1,5 +1,5 @@
 ﻿namespace Mareator;
-public sealed class CommandDispatcher : ICommandDispatcher
+public sealed class CommandDispatcher : IMareatorCommandDispatcher
 {
     private readonly Dictionary<Type, object> _handlers = new();
 

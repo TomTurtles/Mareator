@@ -13,6 +13,7 @@
 		<PackageTags>Mediator Simple</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/TomTurtles/mareator</RepositoryUrl>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>

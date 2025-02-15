@@ -1,6 +1,6 @@
 ﻿namespace Mareator;
 
-public sealed class EventDispatcher : IEventDispatcher
+public sealed class EventDispatcher : IMareatorEventDispatcher
 {
     // An object used for thread-safety (locking).
     private readonly object _lockObj = new();

@@ -1,6 +1,6 @@
 ﻿namespace Mareator;
 
-public sealed class RequestDispatcher : IRequestDispatcher
+public sealed class RequestDispatcher : IMareatorRequestDispatcher
 {
     private readonly Dictionary<Type, object> _handlers = new();
 

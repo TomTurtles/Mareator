@@ -2,14 +2,14 @@
 
 public sealed class Mareator : IMareator
 {
-    private readonly IEventDispatcher _eventDispatcher;
-    private readonly ICommandDispatcher _commandDispatcher;
-    private readonly IRequestDispatcher _requestDispatcher;
+    private readonly IMareatorEventDispatcher _eventDispatcher;
+    private readonly IMareatorCommandDispatcher _commandDispatcher;
+    private readonly IMareatorRequestDispatcher _requestDispatcher;
 
     public Mareator(
-        IEventDispatcher eventDispatcher,
-        ICommandDispatcher commandDispatcher,
-        IRequestDispatcher requestDispatcher)
+        IMareatorEventDispatcher eventDispatcher,
+        IMareatorCommandDispatcher commandDispatcher,
+        IMareatorRequestDispatcher requestDispatcher)
     {
         _eventDispatcher = eventDispatcher;
         _commandDispatcher = commandDispatcher;

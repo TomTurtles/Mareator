@@ -1,5 +1,5 @@
 ﻿namespace Mareator;
-public interface IEventDispatcher
+public interface IMareatorEventDispatcher
 {
     /// <summary>
     /// Subscribes a handler for a specific EventArgs type.

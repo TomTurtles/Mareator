@@ -1,5 +1,5 @@
 ﻿namespace Mareator;
-public interface ICommandDispatcher
+public interface IMareatorCommandDispatcher
 {
     /// <summary>
     /// Runs the command by invoking the appropriate async command handler.
