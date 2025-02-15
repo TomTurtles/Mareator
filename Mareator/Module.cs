@@ -1,7 +1,15 @@
-﻿namespace Mareator;
+﻿using System.Diagnostics;
+
+namespace Mareator;
 
 public static class Module
 {
+    public static IServiceCollection AddMareator(
+        this IServiceCollection services)
+    {
+        return services.AddMareator(new Assembly[] { });
+    }
+
     /// <summary>
     /// Registers IEventDispatcher, ICommandDispatcher, and IMareator as singletons.
     /// Also scans the provided assemblies for any ICommandHandler<TCommand> implementations
@@ -12,23 +20,7 @@ public static class Module
     /// <returns>The updated IServiceCollection.</returns>
     public static IServiceCollection AddMareator(
         this IServiceCollection services,
-        params Assembly[] assemblies)
-    {
-        return services.AddMareator(null, assemblies);
-    }
-
-    public static IServiceCollection AddKeyedMareator(
-        this IServiceCollection services,
-        string key,
-        params Assembly[] assemblies)
-    {
-        return services.AddMareator(key, assemblies);
-    }
-
-    private static IServiceCollection AddMareator(
-        this IServiceCollection services,
-        string? key = null,
-        params Assembly[] assemblies)
+        Assembly[] assemblies)
     {
         // If no assemblies provided, use the calling assembly as a best guess
         if (assemblies == null || assemblies.Length == 0)
@@ -36,46 +28,78 @@ public static class Module
             assemblies = [Assembly.GetCallingAssembly()];
         }
 
-        // 1. Register all ICommandHandler<TCommand> implementations from the given assemblies
-        foreach (var assembly in assemblies)
+        Debug.WriteLine($"Assemblies: {string.Join(",", assemblies.Select(a => a.GetName().Name))}");
+
+        var types = assemblies
+            .SelectMany(a => a.GetTypes())
+            .ToArray();
+
+        return services.AddMareator(types);
+    }
+
+    public static IServiceCollection AddMareator(
+        this IServiceCollection services,
+        Type[] types)
+    {
+        if (types == null || types.Length == 0)
         {
-            var handlerTypes = assembly.GetTypes()
-                .Where(t => !t.IsAbstract && !t.IsInterface)
-                .Where(t => t.GetInterfaces().Any(i =>
-                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>)))
-                .ToList();
-
-            foreach (var type in handlerTypes)
-            {
-                // Register the handler as itself for the DI container
-                services.AddSingleton(typeof(ICommandHandler), type);
-
-                // Also register for each ICommandHandler<TCommand> interface it implements
-                var handlerInterfaces = type.GetInterfaces().Where(i =>
-                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
-
-                foreach (var intf in handlerInterfaces)
-                {
-                    services.AddSingleton(intf, type);
-                }
-            }
+            throw new ArgumentException("At least one type must be provided", nameof(types));
         }
 
-        var requestHandlerTypes = assemblies
-            .SelectMany(a => a.GetTypes())
+        Debug.WriteLine($"Types: {string.Join(",", types.Select(t => t.Name))}");
+
+        RegisterCommandHandlers(services, types);
+        RegisterRequestHandlers(services, types);
+
+        // 3. Register the core dispatchers
+        services.AddSingleton<IMareatorEventDispatcher, EventDispatcher>();
+        services.AddSingleton<IMareatorCommandDispatcher, CommandDispatcher>();
+        services.AddSingleton<IMareatorRequestDispatcher, RequestDispatcher>();
+
+        // 4. Register Mareator (Facade)
+        services.AddSingleton<IMareator, Mareator>();
+
+        return services;
+    }
+
+    private static void RegisterCommandHandlers(IServiceCollection services, Type[] types)
+    {
+        var handlerTypes = types
             .Where(t => !t.IsAbstract && !t.IsInterface)
             .Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)))
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>)))
             .ToList();
+
+        Debug.WriteLine($"CommandHandlers: {string.Join(",", handlerTypes.Select(t => t.Name))}");
+
+        foreach (var type in handlerTypes)
+        {
+            services.AddSingleton(typeof(ICommandHandler), type);
+
+            var handlerInterfaces = type.GetInterfaces().Where(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
+
+            foreach (var intf in handlerInterfaces)
+            {
+                services.AddSingleton(intf, type);
+            }
+        }
+    }
+
+    private static void RegisterRequestHandlers(IServiceCollection services, Type[] types)
+    {
+        var requestHandlerTypes = types
+            .Where(t => !t.IsAbstract && !t.IsInterface)
+            .Where(t => t.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)))
+            .ToList();
+
+        Debug.WriteLine($"RequestHandlers: {string.Join(",", requestHandlerTypes.Select(t => t.Name))}");
 
         foreach (var type in requestHandlerTypes)
         {
-            // Register a base interface if you have it, e.g. IRequestHandlerBase
-            // This ensures the RequestDispatcher can accept IEnumerable<IRequestHandlerBase>.
             services.AddSingleton(typeof(IRequestHandler), type);
 
-            // Also register each IRequestHandler<TRequest, TResponse> interface
             var handlerInterfaces = type.GetInterfaces().Where(i =>
                 i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>));
 
@@ -84,22 +108,6 @@ public static class Module
                 services.AddSingleton(intf, type);
             }
         }
-
-        // 2. Register the core dispatchers
-        services.AddSingleton<IMareatorEventDispatcher, EventDispatcher>();
-        services.AddSingleton<IMareatorCommandDispatcher, CommandDispatcher>();
-        services.AddSingleton<IMareatorRequestDispatcher, RequestDispatcher>();
-
-        // 3. Register Mareator (Facade)
-        if (key == null)
-        {
-            services.AddSingleton<IMareator, Mareator>();
-        }
-        else
-        {
-            services.AddKeyedSingleton<IMareator, Mareator>(key);
-        }
-        
-        return services;
     }
+
 }

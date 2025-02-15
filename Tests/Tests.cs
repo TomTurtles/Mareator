@@ -1,4 +1,6 @@
-﻿namespace Tests;
+﻿using System.Diagnostics;
+
+namespace Mareator.Tests;
 
 [TestClass]
 public sealed class Tests
@@ -14,7 +16,7 @@ public sealed class Tests
         var mareator = provider.GetService<IMareator>();
 
         Assert.IsNotNull(mareator);
-        Assert.IsInstanceOfType<Mareator.Mareator>(mareator);
+        Assert.IsInstanceOfType<Mareator>(mareator);
     }
 
     [TestMethod]
@@ -110,6 +112,87 @@ public sealed class Tests
 
         Assert.IsFalse(throwsException);
         Assert.AreEqual(3, result);
+    }
+
+    [TestMethod]
+    public async Task _5_RegisterTypes_ShouldFailAsync()
+    {
+        Type[] types = [
+            typeof(Tests),
+        ];
+
+        var services = new ServiceCollection()
+            .AddMareator(types);
+
+        var provider = services.BuildServiceProvider();
+        var mareator = provider.GetRequiredService<IMareator>();
+
+        var throwsException = false;
+        try
+        {
+            await mareator.RunAsync(new TestCommand());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            throwsException = true;
+        }
+
+        Assert.IsTrue(throwsException);
+    }
+
+    [TestMethod]
+    public async Task _6_CommandWithTypes_ShouldWorkAsync()
+    {
+        Type[] types = [
+            typeof(TestHandler),
+        ];
+
+        var services = new ServiceCollection()
+            .AddMareator(types);
+
+        var provider = services.BuildServiceProvider();
+        var mareator = provider.GetRequiredService<IMareator>();
+
+        var throwsException = false;
+        try
+        {
+            await mareator.RunAsync(new TestCommand());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            throwsException = true;
+        }
+
+        Assert.IsFalse(throwsException);
+    }
+
+    [TestMethod]
+    public async Task _7_RequestWithTypes_ShouldWorkAsync()
+    {
+        Type[] types = [
+            typeof(TestHandler),
+        ];
+
+        var services = new ServiceCollection()
+            .AddMareator(types);
+
+        var provider = services.BuildServiceProvider();
+        var mareator = provider.GetRequiredService<IMareator>();
+
+        var throwsException = false;
+        try
+        {
+            var result = await mareator.RequestAsync<TestRequest, TestRequestResult>(new TestRequest());
+            Assert.AreEqual(3, result.Value);
+        }
+        catch (Exception)
+        {
+            throwsException = true;
+        }
+
+        Assert.IsFalse(throwsException);
     }
 }
 
