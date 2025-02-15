@@ -14,6 +14,22 @@ public static class Module
         this IServiceCollection services,
         params Assembly[] assemblies)
     {
+        return services.AddMareator(assemblies);
+    }
+
+    public static IServiceCollection AddKeyedMareator(
+        this IServiceCollection services,
+        string key,
+        params Assembly[] assemblies)
+    {
+        return services.AddMareator(key, assemblies);
+    }
+
+    private static IServiceCollection AddMareator(
+        this IServiceCollection services,
+        string? key = null,
+        params Assembly[] assemblies)
+    {
         // If no assemblies provided, use the calling assembly as a best guess
         if (assemblies == null || assemblies.Length == 0)
         {
@@ -75,8 +91,15 @@ public static class Module
         services.AddSingleton<IRequestDispatcher, RequestDispatcher>();
 
         // 3. Register Mareator (Facade)
-        services.AddSingleton<IMareator, Mareator>();
-
+        if (key == null)
+        {
+            services.AddSingleton<IMareator, Mareator>();
+        }
+        else
+        {
+            services.AddKeyedSingleton<IMareator, Mareator>(key);
+        }
+        
         return services;
     }
 }
